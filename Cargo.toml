@@ -1,0 +1,7 @@
+[package]
+name = "cortex-m-switch"
+version = "0.1.0"
+authors = ["Daan de Graaf <daandegraaf9@gmail.com>"]
+
+[dependencies]
+cortex-m-switch-macros = { path = "macros" }

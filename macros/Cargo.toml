@@ -1,0 +1,12 @@
+[package]
+name = "cortex-m-switch-macros"
+version = "0.0.0"
+authors = ["Daan de Graaf <daandegraaf9@gmail.com>"]
+
+[lib]
+proc_macro = true
+
+[dependencies]
+proc-macro2 = "0.4"
+syn = { version = "0.15.22", features = ["full", "extra-traits"] }
+quote = "0.6.10"
