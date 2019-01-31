@@ -5,4 +5,4 @@ qemu-system-arm \
       -semihosting-config enable=on,target=native \
       -gdb tcp::3333 \
       -S \
-      -kernel target/thumbv7m-none-eabi/release/thread_psp
+      -kernel target/thumbv7m-none-eabi/release/thread_msp
