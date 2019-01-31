@@ -1,8 +1,5 @@
 #![no_main]
 #![no_std]
-#![feature(asm)]
-#![feature(naked_functions)]
-#![feature(const_raw_ptr_to_usize_cast)]
 
 extern crate panic_semihosting;
 
@@ -121,7 +118,7 @@ fn main() -> ! {
     loop {}
 }
 
-const DELAY_CYCLES: u32 = 20_000_000;
+const DELAY_CYCLES: u32 = 10_000_000;
 
 fn print_loop() -> ! {
     loop {
@@ -155,10 +152,15 @@ fn SysTick(exc: ExceptionReturn) -> ExceptionReturn {
 
     hprint!("\n[{}]: Tick ({:?}): ", *TASK_INDEX, exc).unwrap();
 
-    if let Some(ref mut task) = TASKS[*TASK_INDEX] {
+    if *TASK_INDEX == 10 {
+        hprintln!("Done!").unwrap();
+        debug::exit(EXIT_SUCCESS);
+    }
+
+    if let Some(ref mut task) = TASKS[*TASK_INDEX % NROF_TASKS] {
         if let TaskState::Running = task.state {
             unsafe { task.save_context() };
-            *TASK_INDEX = (*TASK_INDEX + 1) % NROF_TASKS;
+            *TASK_INDEX = *TASK_INDEX + 1;
         } else {
             panic!("Task was not running! {:?}", task.state);
         }
@@ -167,7 +169,7 @@ fn SysTick(exc: ExceptionReturn) -> ExceptionReturn {
         TASKS[1] = Some(Task::new(stack_filler));
     }
 
-    if let Some(ref mut task) = TASKS[*TASK_INDEX] {
+    if let Some(ref mut task) = TASKS[*TASK_INDEX % NROF_TASKS] {
         unsafe { task.schedule_now() };
     }
 

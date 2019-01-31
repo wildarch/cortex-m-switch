@@ -17,16 +17,20 @@ use syn::{
 fn exc_return_type(ty: &Type) -> Option<Type> {
     match ty {
         Type::Path(path) => match path.path.segments.last() {
-            Some(Pair::End(name)) => if name.ident.to_string() == "ExceptionReturn" {
-                Some(ty.clone())
-            } else {
-                None
-            },
+            Some(Pair::End(name)) => {
+                if name.ident.to_string() == "ExceptionReturn" {
+                    Some(ty.clone())
+                } else {
+                    None
+                }
+            }
             _ => None,
         },
         _ => None,
     }
 }
+
+const ALLOWED_NAMES: &'static [&'static str] = &["SysTick", "PendSV", "SVCall"];
 
 #[proc_macro_attribute]
 pub fn exception(args: TokenStream, input: TokenStream) -> TokenStream {
@@ -34,20 +38,21 @@ pub fn exception(args: TokenStream, input: TokenStream) -> TokenStream {
         return Error::new(
             Span::call_site(),
             "This attribute does not accept arguments",
-        ).to_compile_error()
+        )
+        .to_compile_error()
         .into();
     }
 
     let func = parse_macro_input!(input as ItemFn);
 
     // Function name check
-    const ALLOWED_NAMES: &'static [&'static str] = &["SysTick", "PendSV", "SVCall"];
     let func_name = func.ident.to_string();
     if !ALLOWED_NAMES.contains(&&*func_name) {
         return Error::new(
             func.ident.span(),
             format!("The function name must be one of: {:?}", ALLOWED_NAMES),
-        ).to_compile_error()
+        )
+        .to_compile_error()
         .into();
     }
 
@@ -56,14 +61,16 @@ pub fn exception(args: TokenStream, input: TokenStream) -> TokenStream {
         match func.decl.inputs[0] {
             FnArg::Captured(ref arg) => (
                 match arg.pat {
-                    Pat::Ident(ref arg_ident) => if arg_ident.by_ref.is_none()
-                        && arg_ident.mutability.is_none()
-                        && arg_ident.subpat.is_none()
-                    {
-                        Some(arg_ident.ident.clone())
-                    } else {
-                        None
-                    },
+                    Pat::Ident(ref arg_ident) => {
+                        if arg_ident.by_ref.is_none()
+                            && arg_ident.mutability.is_none()
+                            && arg_ident.subpat.is_none()
+                        {
+                            Some(arg_ident.ident.clone())
+                        } else {
+                            None
+                        }
+                    }
                     _ => None,
                 },
                 exc_return_type(&arg.ty),
@@ -79,11 +86,13 @@ pub fn exception(args: TokenStream, input: TokenStream) -> TokenStream {
         ReturnType::Default => None,
         ReturnType::Type(_arrow, ref ty) => match ty.as_ref() {
             Type::Path(path) => match path.path.segments.last() {
-                Some(Pair::End(name)) => if name.ident.to_string() == "ExceptionReturn" {
-                    Some(ty.clone())
-                } else {
-                    None
-                },
+                Some(Pair::End(name)) => {
+                    if name.ident.to_string() == "ExceptionReturn" {
+                        Some(ty.clone())
+                    } else {
+                        None
+                    }
+                }
                 _ => None,
             },
             _ => None,
@@ -112,7 +121,8 @@ pub fn exception(args: TokenStream, input: TokenStream) -> TokenStream {
             func.span(),
             "exceptions must have signature \
              `[unsafe] fn(ExceptionReturn) -> ExceptionReturn`",
-        ).to_compile_error()
+        )
+        .to_compile_error()
         .into();
     }
 
@@ -132,65 +142,40 @@ pub fn exception(args: TokenStream, input: TokenStream) -> TokenStream {
             let expr = var.expr;
 
             quote!(
-		#[allow(non_snake_case)]
-		let #ident: &mut #ty = unsafe {
-		    #(#attrs)*
-		    static mut #ident: #ty = #expr;
+            #[allow(non_snake_case)]
+            let #ident: &mut #ty = unsafe {
+                #(#attrs)*
+                static mut #ident: #ty = #expr;
 
-		    &mut #ident
-		};
-	    )
-        }).collect::<Vec<_>>();
+                &mut #ident
+            };
+            )
+        })
+        .collect::<Vec<_>>();
 
     let attrs = func.attrs;
     let unsafety = func.unsafety;
     let mangle_name = format!("cortex_m_switch_{}", func_name);
     let mangle_ident = Ident::new(&mangle_name, Span::call_site());
     let func_ident = func.ident;
-    let asm = format!(
-        "
-                    mov r0, lr
 
-                    /* Don't push to psp stack if we weren't using it. */
-                    and r1, r0, #4
-                    cbz r1, skip_stack_push
-
-                    /* Save psp stack. */
-                    mrs r12, psp
-                    stmdb r12!, {{r4-r11}}
-                    msr psp, r12
-                skip_stack_push:
-                    bl {}
-
-                    /* Don't pop psp stack if we're not switching to it. */
-                    and r1, r0, #4
-                    cbz r1, skip_stack_pop
-
-                    /* Restore psp stack. */
-                    mrs r12, psp
-                    ldmfd r12!, {{r4-r11}}
-                    msr psp, r12
-                skip_stack_pop:
-                    bx r0
-                ",
-        mangle_name
-    );
+    let library_name = format!("cortex_m_switch_{}_handler", func_ident);
 
     quote!(
-        #[naked]
-        #[no_mangle]
-        pub unsafe extern "C" fn #func_ident() {
-            asm!(#asm);
+        #[link(name = #library_name, kind = "static")]
+        extern {
+            pub fn #func_ident();
         }
 
         #(#attrs)*
         #[no_mangle]
         pub #unsafety extern "C" fn #mangle_ident(#arg_name: #return_type) -> #return_type {
-	    #(#vars)*
+        #(#vars)*
 
             #(#stmts)*
         }
-    ).into()
+    )
+    .into()
 }
 
 /// Extracts `static mut` vars from the beginning of the given statements

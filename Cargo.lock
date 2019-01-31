@@ -2,12 +2,12 @@
 name = "cortex-m-switch"
 version = "0.1.0"
 dependencies = [
- "cortex-m-switch-macros 0.1.0",
+ "cortex-m-switch-macros 0.0.0",
 ]
 
 [[package]]
 name = "cortex-m-switch-macros"
-version = "0.1.0"
+version = "0.0.0"
 dependencies = [
  "proc-macro2 0.4.24 (registry+https://github.com/rust-lang/crates.io-index)",
  "quote 0.6.10 (registry+https://github.com/rust-lang/crates.io-index)",

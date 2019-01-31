@@ -1,8 +1,6 @@
 #![deny(unsafe_code)]
 #![no_main]
 #![no_std]
-#![feature(asm)]
-#![feature(naked_functions)]
 
 extern crate panic_semihosting;
 
@@ -38,4 +36,14 @@ fn SysTick(exc: ExceptionReturn) -> ExceptionReturn {
         debug::exit(EXIT_SUCCESS);
     }
     ExceptionReturn::ThreadMsp
+}
+
+#[exception]
+fn PendSV(exc: ExceptionReturn) -> ExceptionReturn {
+    exc
+}
+
+#[exception]
+fn SVCall(exc: ExceptionReturn) -> ExceptionReturn {
+    exc
 }
