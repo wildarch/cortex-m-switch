@@ -16,3 +16,7 @@ rm PendSV_handler.o
 arm-none-eabi-as -march=armv7-m SVCall_handler.s -o SVCall_handler.o
 arm-none-eabi-ar crs SVCall_handler.a SVCall_handler.o
 rm SVCall_handler.o
+
+arm-none-eabi-as -march=armv7-m svc.s -o svc.o
+arm-none-eabi-ar crs svc.a svc.o
+rm svc.o

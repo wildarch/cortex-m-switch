@@ -1,6 +1,5 @@
 #![no_main]
 #![no_std]
-#![feature(asm)]
 
 extern crate panic_semihosting;
 
@@ -14,7 +13,7 @@ use cortex_m_semihosting::{
     debug::{self, EXIT_SUCCESS},
     hprint, hprintln,
 };
-use cortex_m_switch::{exception, ExceptionReturn};
+use cortex_m_switch::{exception, svc, ExceptionReturn};
 
 const PSR_DEFAULT: u32 = 0x2100_0000;
 
@@ -126,10 +125,10 @@ const DELAY_CYCLES: u32 = 10_000_000;
 
 fn print_loop() -> ! {
     loop {
-        unsafe { asm!("svc #2") };
+        unsafe { svc() };
         hprint!("O").unwrap();
         cortex_m::asm::delay(DELAY_CYCLES);
-        unsafe { asm!("svc #1") };
+        unsafe { svc() };
     }
 }
 
@@ -187,11 +186,11 @@ fn SysTick(exc: ExceptionReturn) -> ExceptionReturn {
 #[exception]
 fn SVCall(exc: ExceptionReturn) -> ExceptionReturn {
     hprintln!("System call!").unwrap();
-    let stack_ptr = unsafe { psp::read() };
+    let stack_ptr = psp::read();
     let stack_ptr = stack_ptr + mem::size_of::<SoftwareStackFrame>() as u32;
     let stack_ptr = stack_ptr as *const ExceptionFrame;
     let frame = unsafe { read_volatile(stack_ptr) };
     let svc_num = unsafe { read_volatile((frame.pc - 2) as *const u8) };
-    hprintln!("System call number: {}", svc_num);
+    hprintln!("System call number: {}", svc_num).unwrap();
     exc
 }

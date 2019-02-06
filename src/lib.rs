@@ -22,3 +22,13 @@ pub enum ExceptionReturn {
     #[cfg(has_fpu)]
     ThreadPspFpu = 0xFFFFFFED,
 }
+
+#[link(name = "svc")]
+extern "C" {
+    fn cortex_m_switch_svc();
+}
+
+#[inline]
+pub unsafe fn svc() {
+    cortex_m_switch_svc();
+}
