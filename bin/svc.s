@@ -1,8 +1,6 @@
 .global cortex_m_switch_svc
 .type cortex_m_switch_svc,%function
-.thumb
 .thumb_func
-.syntax unified
 cortex_m_switch_svc:
     /* We use the EABI convention.
      *

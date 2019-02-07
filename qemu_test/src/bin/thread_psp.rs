@@ -125,10 +125,10 @@ const DELAY_CYCLES: u32 = 10_000_000;
 
 fn print_loop() -> ! {
     loop {
-        unsafe { svc() };
+        unsafe { svc!(0) };
         hprint!("O").unwrap();
         cortex_m::asm::delay(DELAY_CYCLES);
-        unsafe { svc() };
+        unsafe { svc!(2) };
     }
 }
 

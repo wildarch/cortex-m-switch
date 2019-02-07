@@ -1,6 +1,9 @@
 #![no_std]
 extern crate cortex_m_switch_macros as macros;
 
+#[macro_use]
+pub mod svc;
+
 pub use macros::exception;
 
 /// Exception return (and entry) codes.
@@ -21,14 +24,4 @@ pub enum ExceptionReturn {
     ThreadMspFpu = 0xFFFFFFE9,
     #[cfg(has_fpu)]
     ThreadPspFpu = 0xFFFFFFED,
-}
-
-#[link(name = "svc")]
-extern "C" {
-    fn cortex_m_switch_svc();
-}
-
-#[inline]
-pub unsafe fn svc() {
-    cortex_m_switch_svc();
 }

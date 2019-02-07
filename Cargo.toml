@@ -2,6 +2,7 @@
 name = "cortex-m-switch"
 version = "0.1.0"
 authors = ["Daan de Graaf <daandegraaf9@gmail.com>"]
+edition = "2018"
 
 [dependencies]
 cortex-m-switch-macros = { path = "macros" }
