@@ -8,7 +8,7 @@ use cortex_m::peripheral::syst::SystClkSource;
 use cortex_m::Peripherals;
 use cortex_m_rt::entry;
 use cortex_m_semihosting::hprintln;
-use cortex_m_switch::{exception, svc, svc_num, task, ExceptionReturn, Task};
+use cortex_m_switch::{exception, svc, task, ExceptionContext, ExceptionReturn, Task};
 
 #[entry]
 fn main() -> ! {
@@ -44,8 +44,10 @@ fn print_task2() {
 }
 
 #[exception]
-fn SysTick(exc: ExceptionReturn) -> ExceptionReturn {
-    static mut TASKS: Option<[Task<[u8; 256]>; 2]> = None;
+fn SysTick(ctx: ExceptionContext) -> ExceptionReturn {
+    static mut STACK1: [u8; 256] = [0; 256];
+    static mut STACK2: [u8; 256] = [0; 256];
+    static mut TASKS: Option<[Task; 2]> = None;
     static mut COUNTER: usize = 0;
 
     hprintln!("Scheduler tick {}", COUNTER).unwrap();
@@ -62,17 +64,24 @@ fn SysTick(exc: ExceptionReturn) -> ExceptionReturn {
         unsafe { tasks[task_index].schedule_now() };
     } else {
         // Initialize tasks
-        let mut tasks = [task!(256, print_task), task!(256, print_task2)];
+        let mut tasks = [
+            task!(&mut *STACK1, print_task),
+            task!(&mut *STACK2, print_task2),
+        ];
         unsafe { tasks[0].schedule_now() };
         *TASKS = Some(tasks);
     }
 
-    hprintln!("Tick ({:?})", exc).unwrap();
+    hprintln!("Tick ({:?})", ctx.exc_return()).unwrap();
     ExceptionReturn::ThreadPsp
 }
 
 #[exception]
-fn SVCall(exc: ExceptionReturn) -> ExceptionReturn {
-    hprintln!("System call number: {}", svc_num().unwrap()).unwrap();
-    exc
+fn SVCall(ctx: ExceptionContext) -> ExceptionReturn {
+    if let Some(num) = ctx.svc_num() {
+        hprintln!("System call number: {}", num).unwrap();
+    } else {
+        hprintln!("Could not retrieve System call number!").unwrap();
+    }
+    ctx.exc_return()
 }

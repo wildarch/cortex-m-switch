@@ -14,11 +14,11 @@ use syn::{
     parse, Error, FnArg, Ident, Item, ItemFn, ItemStatic, Pat, ReturnType, Stmt, Type, Visibility,
 };
 
-fn exc_return_type(ty: &Type) -> Option<Type> {
+fn exc_context_type(ty: &Type) -> Option<Type> {
     match ty {
         Type::Path(path) => match path.path.segments.last() {
             Some(Pair::End(name)) => {
-                if name.ident.to_string() == "ExceptionReturn" {
+                if name.ident.to_string() == "ExceptionContext" {
                     Some(ty.clone())
                 } else {
                     None
@@ -73,7 +73,7 @@ pub fn exception(args: TokenStream, input: TokenStream) -> TokenStream {
                     }
                     _ => None,
                 },
-                exc_return_type(&arg.ty),
+                exc_context_type(&arg.ty),
             ),
             _ => (None, None),
         }
@@ -104,8 +104,7 @@ pub fn exception(args: TokenStream, input: TokenStream) -> TokenStream {
         && func.decl.variadic.is_none()
         && arg_name.is_some()
         && arg_type.is_some()
-        && return_type.is_some()
-        && arg_type.map(Box::new) == return_type;
+        && return_type.is_some();
 
     let valid_signature =
         // TODO check attributes?
@@ -117,13 +116,18 @@ pub fn exception(args: TokenStream, input: TokenStream) -> TokenStream {
         valid_declaration;
 
     if !valid_signature {
-        return Error::new(
-            func.span(),
-            "exceptions must have signature \
-             `[unsafe] fn(ExceptionReturn) -> ExceptionReturn`",
-        )
-        .to_compile_error()
-        .into();
+        let error = if !arg_type.is_some() {
+            Error::new(func.span(), "Argument must be of type `ExceptionContext`")
+        } else if !return_type.is_some() {
+            Error::new(func.span(), "Return type must be `ExceptionReturn`")
+        } else {
+            Error::new(
+                func.span(),
+                "exceptions must have signature \
+                 `[unsafe] fn(ExceptionContext) -> ExceptionReturn`",
+            )
+        };
+        return error.to_compile_error().into();
     }
 
     let stmts = func.block.stmts;
@@ -169,7 +173,7 @@ pub fn exception(args: TokenStream, input: TokenStream) -> TokenStream {
 
         #(#attrs)*
         #[no_mangle]
-        pub #unsafety extern "C" fn #mangle_ident(#arg_name: #return_type) -> #return_type {
+        pub #unsafety extern "C" fn #mangle_ident(#arg_name: #arg_type) -> #return_type {
         #(#vars)*
 
             #(#stmts)*

@@ -10,7 +10,7 @@ use cortex_m_semihosting::{
     debug::{self, EXIT_SUCCESS},
     hprintln,
 };
-use cortex_m_switch::{exception, ExceptionReturn};
+use cortex_m_switch::{exception, ExceptionContext, ExceptionReturn};
 
 #[entry]
 fn main() -> ! {
@@ -26,11 +26,11 @@ fn main() -> ! {
 }
 
 #[exception]
-fn SysTick(exc: ExceptionReturn) -> ExceptionReturn {
+fn SysTick(ctx: ExceptionContext) -> ExceptionReturn {
     static mut COUNTER: usize = 0;
 
     *COUNTER += 1;
-    hprintln!("{:02} ({:?})", *COUNTER, exc).unwrap();
+    hprintln!("{:02} ({:?})", *COUNTER, ctx.exc_return()).unwrap();
     if *COUNTER == 10 {
         debug::exit(EXIT_SUCCESS);
     }
@@ -38,6 +38,6 @@ fn SysTick(exc: ExceptionReturn) -> ExceptionReturn {
 }
 
 #[exception]
-fn PendSV(exc: ExceptionReturn) -> ExceptionReturn {
-    exc
+fn PendSV(ctx: ExceptionContext) -> ExceptionReturn {
+    ctx.exc_return()
 }
