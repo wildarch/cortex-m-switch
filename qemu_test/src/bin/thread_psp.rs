@@ -34,9 +34,11 @@ fn print_task() {
 }
 
 fn print_task2() {
+    let mut counter = 0;
     loop {
         hprintln!("Hallo, chinees?").unwrap();
-        unsafe { svc!(1) };
+        unsafe { svc!(1, count: counter) };
+        counter += 1;
         for _ in 0..100 {
             delay(10_000_000);
         }
@@ -72,7 +74,7 @@ fn SysTick(ctx: ExceptionContext) -> ExceptionReturn {
         *TASKS = Some(tasks);
     }
 
-    hprintln!("Tick ({:?})", ctx.exc_return()).unwrap();
+    hprintln!("Tick ({:?})\n", ctx.exc_return()).unwrap();
     ExceptionReturn::ThreadPsp
 }
 
@@ -80,6 +82,10 @@ fn SysTick(ctx: ExceptionContext) -> ExceptionReturn {
 fn SVCall(ctx: ExceptionContext) -> ExceptionReturn {
     if let Some(num) = ctx.svc_num() {
         hprintln!("System call number: {}", num).unwrap();
+        if num == 1 {
+            let ex_frame = ctx.exception_frame().unwrap();
+            hprintln!("Argument 1: {}", ex_frame.r0).unwrap();
+        }
     } else {
         hprintln!("Could not retrieve System call number!").unwrap();
     }

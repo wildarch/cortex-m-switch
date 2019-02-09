@@ -61,6 +61,47 @@ impl ExceptionContext {
             None
         }
     }
+
+    pub fn exception_frame(&self) -> Option<&ExceptionFrame> {
+        use ExceptionReturn::*;
+        match self.exc_return() {
+            // We are pushing data on msp ourselves, so we have no way to find the frame again.
+            HandlerMsp | ThreadMsp => None,
+            #[cfg(has_fpu)]
+            HandlerMspFpu | ThreadMspFpu => None,
+
+            ThreadPsp => Some(self.ex_frame()),
+            #[cfg(has_fpu)]
+            ThreadPspFpu => Some(self.ex_frame()),
+        }
+    }
+
+    pub fn software_frame(&self) -> Option<&SoftwareStackFrame> {
+        use ExceptionReturn::*;
+        match self.exc_return() {
+            // We are pushing data on msp ourselves, so we have no way to find the frame again.
+            HandlerMsp | ThreadMsp => None,
+            #[cfg(has_fpu)]
+            HandlerMspFpu | ThreadMspFpu => None,
+
+            ThreadPsp => Some(self.sw_frame()),
+            #[cfg(has_fpu)]
+            ThreadPspFpu => Some(self.sw_frame()),
+        }
+    }
+
+    fn ex_frame(&self) -> &ExceptionFrame {
+        let stack_ptr = psp::read();
+        let ex_frame_ptr = stack_ptr + mem::size_of::<SoftwareStackFrame>() as u32;
+        let ex_frame_ptr = ex_frame_ptr as *const ExceptionFrame;
+        unsafe { &*ex_frame_ptr }
+    }
+
+    pub fn sw_frame(&self) -> &SoftwareStackFrame {
+        let stack_ptr = psp::read();
+        let sw_frame_ptr = stack_ptr as *const SoftwareStackFrame;
+        unsafe { &*sw_frame_ptr }
+    }
 }
 
 /// Registers backed up by the exception handlers for the PendSV, SVCall and SysTick exceptions.
