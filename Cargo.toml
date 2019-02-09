@@ -6,3 +6,5 @@ edition = "2018"
 
 [dependencies]
 cortex-m-switch-macros = { path = "macros" }
+cortex-m-rt = "0.6.7"
+cortex-m = "0.5.8"

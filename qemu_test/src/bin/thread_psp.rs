@@ -3,32 +3,16 @@
 
 extern crate panic_semihosting;
 
-use core::mem;
-use core::ptr::read_volatile;
 use cortex_m::peripheral::syst::SystClkSource;
-use cortex_m::register::psp;
 use cortex_m::Peripherals;
 use cortex_m_rt::{entry, ExceptionFrame};
 use cortex_m_semihosting::{
     debug::{self, EXIT_SUCCESS},
     hprint, hprintln,
 };
-use cortex_m_switch::{exception, svc, ExceptionReturn};
+use cortex_m_switch::{exception, svc, svc_num, ExceptionReturn, SoftwareStackFrame};
 
 const PSR_DEFAULT: u32 = 0x2100_0000;
-
-#[repr(C)]
-#[derive(Default)]
-struct SoftwareStackFrame {
-    r4: u32,
-    r5: u32,
-    r6: u32,
-    r7: u32,
-    r8: u32,
-    r9: u32,
-    r10: u32,
-    r11: u32,
-}
 
 const STACK_SIZE: usize = 1024;
 const STACK_CANARY_VALUE: u32 = 0xDEADBEEF;
@@ -185,12 +169,6 @@ fn SysTick(exc: ExceptionReturn) -> ExceptionReturn {
 
 #[exception]
 fn SVCall(exc: ExceptionReturn) -> ExceptionReturn {
-    hprintln!("System call!").unwrap();
-    let stack_ptr = psp::read();
-    let stack_ptr = stack_ptr + mem::size_of::<SoftwareStackFrame>() as u32;
-    let stack_ptr = stack_ptr as *const ExceptionFrame;
-    let frame = unsafe { read_volatile(stack_ptr) };
-    let svc_num = unsafe { read_volatile((frame.pc - 2) as *const u8) };
-    hprintln!("System call number: {}", svc_num).unwrap();
+    hprintln!("System call number: {}", svc_num().unwrap()).unwrap();
     exc
 }
