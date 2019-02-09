@@ -1,6 +1,6 @@
 target extended-remote :3333
 
-file target/thumbv7m-none-eabi/release/thread_msp
+file target/thumbv7m-none-eabi/release/thread_psp
 load
 
 # print demangled symbols

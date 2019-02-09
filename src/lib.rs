@@ -3,8 +3,11 @@ extern crate cortex_m_switch_macros as macros;
 
 #[macro_use]
 pub mod svc;
+#[macro_use]
+pub mod task;
 
 pub use macros::exception;
+pub use task::Task;
 
 use core::mem;
 use core::ptr::read_volatile;
