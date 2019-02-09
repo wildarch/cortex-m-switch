@@ -17,24 +17,25 @@ arm-none-eabi-as -march=armv7-m SVCall_handler.s -o SVCall_handler.o
 arm-none-eabi-ar crs SVCall_handler.a SVCall_handler.o
 rm SVCall_handler.o
 
-arm-none-eabi-as -march=armv7-m svc.s -o svc.o
-arm-none-eabi-ar crs svc.a svc.o
-rm svc.o
-
-# svc_extra.s
-rm -f svc_extra.s svc_extra.a
-
+# svc_{0..255}.s
 for i in {0..255}
 do
     func_name="cortex_m_switch_svc_$i"
+    out_file="svc_$i.s"
 
-    echo ".global $func_name" >> svc_extra.s
-    echo ".type $func_name,%function" >> svc_extra.s
-    echo ".thumb_func" >> svc_extra.s
-    echo "$func_name:" >> svc_extra.s
-    echo "    svc #$i" >> svc_extra.s
-    echo "    mov pc, lr" >> svc_extra.s
-    echo "" >> svc_extra.s
+    rm -f $out_file "svc_$i.a"
+
+    echo ".global $func_name" >> $out_file
+    echo ".type $func_name,%function" >> $out_file
+    echo ".thumb_func" >> $out_file
+    echo "$func_name:" >> $out_file
+    echo "    svc #$i" >> $out_file
+    echo "    mov pc, lr" >> $out_file
+    echo "" >> $out_file
+
+    arm-none-eabi-as -march=armv7-m $out_file -o "svc_$i.o"
+    arm-none-eabi-ar crs "svc_$i.a" "svc_$i.o"
+    rm $out_file "svc_$i.o"
 done
 
 # svc.rs
@@ -43,30 +44,22 @@ SVCFILE="$SRCPATH/svc.rs"
 
 rm -f $SVCFILE
 
-# extern definitions
-echo "#[link(name = \"svc_extra\")]" >> $SVCFILE
-echo "extern \"C\" {" >> $SVCFILE
-for i in {0..255}
-do
-    func_name="cortex_m_switch_svc_$i"
-
-    echo "    #[allow(dead_code)]" >> $SVCFILE
-    echo "    pub fn $func_name();" >> $SVCFILE
-
-done
-echo "}" >> $SVCFILE
-
-echo "" >> $SVCFILE
-
 # svc! macro rule
 echo "#[macro_export]" >> $SVCFILE
 echo "macro_rules! svc {" >> $SVCFILE
 for i in {0..255} 
 do
-    echo "    ($i) => { unsafe { \$crate::svc::cortex_m_switch_svc_$i() } };" >> $SVCFILE
+    echo "    ($i) => {" >> $SVCFILE
+    echo "        {" >> $SVCFILE
+    echo "            #[link(name = \"svc_$i\")]" >> $SVCFILE
+    echo "            extern \"C\" {" >> $SVCFILE
+    echo "                #[allow(dead_code)]" >> $SVCFILE
+    echo "                pub fn cortex_m_switch_svc_$i();" >> $SVCFILE
+    echo "            }" >> $SVCFILE
+    echo "            cortex_m_switch_svc_$i()" >> $SVCFILE
+    echo "        }" >> $SVCFILE
+    echo "    };" >> $SVCFILE
+
 done
 echo "}" >> $SVCFILE
 
-arm-none-eabi-as -march=armv7-m svc_extra.s -o svc_extra.o
-arm-none-eabi-ar crs svc_extra.a svc_extra.o
-rm svc_extra.o

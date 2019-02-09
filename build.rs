@@ -12,8 +12,13 @@ fn main() {
         )
         .unwrap();
     }
-    fs::copy("bin/svc.a", out_dir.join("libsvc.a")).unwrap();
-    fs::copy("bin/svc_extra.a", out_dir.join("libsvc_extra.a")).unwrap();
+    for i in 0..255 {
+        fs::copy(
+            format!("bin/svc_{}.a", i),
+            out_dir.join(format!("libsvc_{}.a", i)),
+        )
+        .unwrap();
+    }
 
     println!("cargo:rustc-link-search={}", env::var("OUT_DIR").unwrap());
 }
