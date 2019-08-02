@@ -92,13 +92,19 @@ impl TaskBuilder {
         self
     }
 
-    pub unsafe fn build<'a>(self, stack: &'a mut [u8]) -> Task<'a> {
+    pub fn build<'a>(self, stack: &'a mut [u8]) -> Task<'a> {
+        const TOTAL_FRAMES_LEN: usize = mem::size_of::<ExceptionFrame>() + mem::size_of::<SoftwareStackFrame>();
+        if TOTAL_FRAMES_LEN >= stack.len() {
+            panic!("Stack too small to fit exception frames (should be at least {}, was {})", TOTAL_FRAMES_LEN, stack.len())
+        }
         let len = stack.len() as isize;
         let ptr = stack.as_mut_ptr() as *mut u8;
-        let ex_ptr = ptr.offset(len - mem::size_of::<ExceptionFrame>() as isize);
-        let sw_ptr = ex_ptr.offset(-(mem::size_of::<SoftwareStackFrame>() as isize));
-        write_volatile(sw_ptr as *mut SoftwareStackFrame, self.sw_frame);
-        write_volatile(ex_ptr as *mut ExceptionFrame, self.ex_frame);
+        unsafe {
+            let ex_ptr = ptr.offset(len - mem::size_of::<ExceptionFrame>() as isize);
+            let sw_ptr = ex_ptr.offset(-(mem::size_of::<SoftwareStackFrame>() as isize));
+            write_volatile(sw_ptr as *mut SoftwareStackFrame, self.sw_frame);
+            write_volatile(ex_ptr as *mut ExceptionFrame, self.ex_frame);
+        }
 
         Task {
             state: TaskState::Created,
@@ -111,10 +117,8 @@ impl TaskBuilder {
 #[macro_export]
 macro_rules! task {
     ($stack:expr, $func:expr) => {
-        unsafe {
-            $crate::task::TaskBuilder::new()
-                .pc($func as usize as u32)
-                .build($stack)
-        }
+        $crate::task::TaskBuilder::new()
+            .pc($func as usize as u32)
+            .build($stack)
     };
 }
