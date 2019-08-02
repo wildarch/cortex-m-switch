@@ -2,14 +2,14 @@
 authors = ["Daan de Graaf <daandegraaf9@gmail.com>"]
 edition = "2018"
 readme = "README.md"
-name = "cortex-m-switch-test"
+name = "cortex-m-switch-qemu-test"
 version = "0.0.0"
 
 [dependencies]
-cortex-m = "0.5.8"
-cortex-m-rt = "0.6.7"
-cortex-m-semihosting = "0.3.2"
-panic-semihosting = "0.5.1"
+cortex-m = "0.6.0"
+cortex-m-rt = "0.6.10"
+cortex-m-semihosting = "0.3.3"
+panic-semihosting = "0.5.2"
 cortex-m-switch = { path = ".." }
 
 [profile.release]
