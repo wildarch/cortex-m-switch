@@ -1,7 +1,7 @@
 #!/bin/bash
 
 SCRIPTPATH="$( cd "$(dirname "$0")" ; pwd -P )"
-cd $SCRIPTPATH
+cd "$SCRIPTPATH"
 
 rm -f *.a
 
@@ -42,24 +42,24 @@ done
 SRCPATH="$SCRIPTPATH/../src"
 SVCFILE="$SRCPATH/svc.rs"
 
-rm -f $SVCFILE
+rm -f "$SVCFILE"
 
 # svc! macro rule
-echo "#[macro_export]" >> $SVCFILE
-echo "macro_rules! svc {" >> $SVCFILE
+echo "#[macro_export]" >> "$SVCFILE"
+echo "macro_rules! svc {" >> "$SVCFILE"
 for i in {0..255} 
 do
-    echo "    ($i \$(, \$arg_name:ident: \$arg_val:expr)*) => {" >> $SVCFILE
-    echo "        {" >> $SVCFILE
-    echo "            #[link(name = \"svc_$i\")]" >> $SVCFILE
-    echo "            extern \"C\" {" >> $SVCFILE
-    echo "                #[allow(dead_code)]" >> $SVCFILE
-    echo "                pub fn cortex_m_switch_svc_$i(\$(\$arg_name: u32)*);" >> $SVCFILE
-    echo "            }" >> $SVCFILE
-    echo "            cortex_m_switch_svc_$i(\$(\$arg_val)*)" >> $SVCFILE
-    echo "        }" >> $SVCFILE
-    echo "    };" >> $SVCFILE
+    echo "    ($i \$(, \$arg_name:ident: \$arg_val:expr)*) => {" >> "$SVCFILE"
+    echo "        {" >> "$SVCFILE"
+    echo "            #[link(name = \"svc_$i\")]" >> "$SVCFILE"
+    echo "            extern \"C\" {" >> "$SVCFILE"
+    echo "                #[allow(dead_code)]" >> "$SVCFILE"
+    echo "                pub fn cortex_m_switch_svc_$i(\$(\$arg_name: u32)*);" >> "$SVCFILE"
+    echo "            }" >> "$SVCFILE"
+    echo "            cortex_m_switch_svc_$i(\$(\$arg_val)*)" >> "$SVCFILE"
+    echo "        }" >> "$SVCFILE"
+    echo "    };" >> "$SVCFILE"
 
 done
-echo "}" >> $SVCFILE
+echo "}" >> "$SVCFILE"
 
